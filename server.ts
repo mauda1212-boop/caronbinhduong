@@ -47,16 +47,11 @@ async function startServer() {
       }
 
       // Initialize AI
-      const genAI = new GoogleGenAI(apiKey);
+      // @google/genai SDK expects an options object with apiKey
+      const genAI = new GoogleGenAI({ apiKey });
       
-      // Verification log
-      if (typeof genAI.getGenerativeModel !== 'function') {
-        throw new Error("Initialization failed: getGenerativeModel is not a function. Check SDK version.");
-      }
-
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Use 1.5-flash for maximum compatibility
-
-      const result = await model.generateContent({
+      const result = await genAI.models.generateContent({
+        model: "gemini-1.5-flash",
         contents: [{
           parts: [
             { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } },
@@ -65,7 +60,7 @@ async function startServer() {
         }]
       });
 
-      const plate = result.response.text().trim();
+      const plate = (result.text || "").trim();
       console.log(`[API Success] Scanned plate: ${plate}`);
       res.json({ plate });
     } catch (error: any) {

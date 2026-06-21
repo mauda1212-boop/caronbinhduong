@@ -37,16 +37,12 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Initialize AI with safety check
-    const genAI = new GoogleGenAI(apiKey);
+    // Initialize AI
+    // @google/genai SDK expects an options object with apiKey
+    const client = new GoogleGenAI({ apiKey });
     
-    if (!genAI || typeof genAI.getGenerativeModel !== 'function') {
-      throw new Error(`SDK Initialization failed: getGenerativeModel is not a function. SDK structure: ${Object.keys(genAI || {}).join(', ')}`);
-    }
-
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const result = await model.generateContent({
+    const result = await client.models.generateContent({
+      model: "gemini-1.5-flash",
       contents: [{
         parts: [
           { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } },
@@ -55,7 +51,7 @@ export const handler: Handler = async (event) => {
       }]
     });
 
-    const plate = result.response.text().trim();
+    const plate = (result.text || "").trim();
     
     return {
       statusCode: 200,
