@@ -1,5 +1,8 @@
 import { Handler } from "@netlify/functions";
-import { GoogleGenAI } from "@google/genai";
+import * as genai from "@google/genai";
+
+// Defensively handle different import styles
+const GoogleGenAI = genai.GoogleGenAI || (genai as any).default?.GoogleGenAI;
 
 export const handler: Handler = async (event) => {
   // Only allow POST requests
@@ -12,14 +15,13 @@ export const handler: Handler = async (event) => {
 
   try {
     const { imageBase64 } = JSON.parse(event.body || "{}");
-    // Support both naming conventions for environment variables
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey || apiKey === 'your_actual_gemini_api_key_here') {
       console.error("Missing Gemini API Key in Netlify environment.");
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: "GEMINI_API_KEY is not configured on Netlify environment variables." }),
+        body: JSON.stringify({ error: "GEMINI_API_KEY is not configured on Netlify." }),
       };
     }
 
@@ -30,8 +32,14 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // Initialize AI with safety check
     const genAI = new GoogleGenAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    if (!genAI || typeof genAI.getGenerativeModel !== 'function') {
+      throw new Error(`SDK Initialization failed: getGenerativeModel is not a function. SDK structure: ${Object.keys(genAI || {}).join(', ')}`);
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const result = await model.generateContent({
       contents: [{
@@ -46,9 +54,7 @@ export const handler: Handler = async (event) => {
     
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ plate }),
     };
   } catch (error: any) {

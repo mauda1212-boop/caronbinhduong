@@ -1,8 +1,14 @@
 import express from "express";
 import path from "path";
 import cors from "cors";
+import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import * as genai from "@google/genai";
+
+dotenv.config();
+
+// Defensively handle different import styles
+const GoogleGenAI = genai.GoogleGenAI || (genai as any).default?.GoogleGenAI;
 
 async function startServer() {
   const app = express();
@@ -20,16 +26,10 @@ async function startServer() {
     next();
   });
 
-  // Health check/Status route
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", time: new Date().toISOString() });
-  });
-
   // API Route for License Plate Scanning
   app.post("/api/scan-plate", async (req, res) => {
     try {
       const { imageBase64 } = req.body;
-      // Support both GEMINI_API_KEY and VITE_GEMINI_API_KEY for compatibility
       const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
       if (!apiKey || apiKey === 'your_actual_gemini_api_key_here') {
@@ -41,9 +41,15 @@ async function startServer() {
         return res.status(400).json({ error: "No image data provided" });
       }
 
+      // Initialize AI
       const genAI = new GoogleGenAI(apiKey);
-      // Use a more widely compatible model alias if needed, but 2.0-flash is great
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      
+      // Verification log
+      if (typeof genAI.getGenerativeModel !== 'function') {
+        throw new Error("Initialization failed: getGenerativeModel is not a function. Check SDK version.");
+      }
+
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Use 1.5-flash for maximum compatibility
 
       const result = await model.generateContent({
         contents: [{
