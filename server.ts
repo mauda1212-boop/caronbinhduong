@@ -30,11 +30,16 @@ async function startServer() {
   app.post("/api/scan-plate", async (req, res) => {
     try {
       const { imageBase64 } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+      let apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
       if (!apiKey || apiKey === 'your_actual_gemini_api_key_here') {
         console.error("Missing Gemini API Key in environment.");
         return res.status(500).json({ error: "GEMINI_API_KEY is not configured on the server." });
+      }
+
+      // Ensure API Key has the "AQ." prefix if it's missing
+      if (apiKey && !apiKey.startsWith('AQ.')) {
+        apiKey = `AQ.${apiKey}`;
       }
 
       if (!imageBase64) {

@@ -15,7 +15,7 @@ export const handler: Handler = async (event) => {
 
   try {
     const { imageBase64 } = JSON.parse(event.body || "{}");
-    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    let apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey || apiKey === 'your_actual_gemini_api_key_here') {
       console.error("Missing Gemini API Key in Netlify environment.");
@@ -23,6 +23,11 @@ export const handler: Handler = async (event) => {
         statusCode: 500,
         body: JSON.stringify({ error: "GEMINI_API_KEY is not configured on Netlify." }),
       };
+    }
+
+    // Ensure API Key has the "AQ." prefix if it's missing
+    if (apiKey && !apiKey.startsWith('AQ.')) {
+      apiKey = `AQ.${apiKey}`;
     }
 
     if (!imageBase64) {
