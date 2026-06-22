@@ -25,11 +25,16 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Remove "AQ." prefix if present (used to bypass secret scanning in some environments)
-    if (apiKey && apiKey.startsWith('AQ.')) {
-      apiKey = apiKey.substring(3);
+    // Sanitize the API Key: remove whitespace and quotes
+    apiKey = apiKey.trim();
+    if ((apiKey.startsWith('"') && apiKey.endsWith('"')) || 
+        (apiKey.startsWith("'") && apiKey.endsWith("'"))) {
+      apiKey = apiKey.substring(1, apiKey.length - 1);
     }
+    apiKey = apiKey.trim();
 
+    // Log diagnostic info (safely masked) to Netlify console for troubleshooting
+    console.log(`[Diagnostic] API Key processed: length=${apiKey.length}, startsWithAQ=${apiKey.startsWith('AQ.')}, prefixCheck=${apiKey.substring(0, 6)}...`);
 
     if (!imageBase64) {
       return {
