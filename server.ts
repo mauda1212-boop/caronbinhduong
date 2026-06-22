@@ -57,7 +57,7 @@ async function startServer() {
       const genAI = new GoogleGenAI({ apiKey });
       
       const result = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3.5-flash",
         contents: [{
           parts: [
             { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } },
