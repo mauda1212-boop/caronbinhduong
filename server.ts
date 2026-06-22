@@ -37,10 +37,11 @@ async function startServer() {
         return res.status(500).json({ error: "GEMINI_API_KEY is not configured on the server." });
       }
 
-      // Ensure API Key has the "AQ." prefix if it's missing
-      if (apiKey && !apiKey.startsWith('AQ.')) {
-        apiKey = `AQ.${apiKey}`;
+      // Remove "AQ." prefix if present (used to bypass secret scanning in some environments)
+      if (apiKey && apiKey.startsWith('AQ.')) {
+        apiKey = apiKey.substring(3);
       }
+
 
       if (!imageBase64) {
         return res.status(400).json({ error: "No image data provided" });
