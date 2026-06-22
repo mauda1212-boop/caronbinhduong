@@ -302,7 +302,7 @@ const SecurityDashboard: React.FC = () => {
 
         <div className="p-4 grid grid-cols-2 gap-4">
             <button 
-                onClick={() => { setIsScannerOpen(true); setScanStep('live'); setStatusMessage(null); setScannedPlate(''); }}
+                onClick={() => { setIsScannerOpen(true); setScanStep('live'); setStatusMessage(null); setScannedPlate(''); setCapturedImage(null); }}
                 className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center gap-2 group active:scale-95 transition-all"
             >
                 <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -376,7 +376,7 @@ const SecurityDashboard: React.FC = () => {
                                     </p>
                                 )}
                                 <div className="flex gap-2">
-                                    <button onClick={() => setScanStep('live')} className="flex-1 py-3 text-gray-500 font-bold bg-gray-50 rounded-xl">Quét lại</button>
+                                    <button onClick={() => { setScanStep('live'); setCapturedImage(null); setStatusMessage(null); setScannedPlate(''); }} className="flex-1 py-3 text-gray-500 font-bold bg-gray-50 rounded-xl">Quét lại</button>
                                     <button onClick={handleAction} disabled={isSubmitting} className="flex-2 py-3 bg-brand-blue text-white font-bold rounded-xl">{isSubmitting ? 'Đang xử lý...' : (activeTab === 'entry' ? 'CÀI VÀO' : 'XÁC NHẬN RA')}</button>
                                 </div>
                             </div>
