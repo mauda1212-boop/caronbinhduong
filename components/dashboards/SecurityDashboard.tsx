@@ -132,38 +132,54 @@ const SecurityDashboard: React.FC = () => {
       setIsSubmitting(true);
       try {
         const now = new Date();
-        const activeJob = state.jobs.find(j => normalizePlate(j.licensePlate) === normalizePlate(plate) && j.status !== JobStatus.Exited);
+        const activeJobsForPlate = state.jobs.filter(j => normalizePlate(j.licensePlate) === normalizePlate(plate) && j.status !== JobStatus.Exited);
 
         if (activeTab === 'entry') {
-            if (activeJob) {
-                throw new Error(`Xe ${plate} đã có lệnh sửa chữa chưa ra xưởng.`);
+            // Kiểm tra xem xe đã thực sự nằm trong xưởng chưa (trừ Lịch hẹn / Bỏ hẹn)
+            const inWorkshopJob = activeJobsForPlate.find(j => j.status !== JobStatus.Appointment && j.status !== JobStatus.MissedAppointment);
+            
+            if (inWorkshopJob) {
+                throw new Error(`Xe ${plate} đã có lệnh ở trong xưởng chưa ra cổng.`);
             }
             
-            // Tìm thông tin xe cũ để lấy tên khách
-            const vehicle = state.vehicles.find(v => normalizePlate(v.licensePlate) === normalizePlate(plate));
+            // Tìm xem xe có lịch hẹn (hoặc bỏ hẹn) nào không
+            const appointmentJob = activeJobsForPlate.find(j => j.status === JobStatus.Appointment || j.status === JobStatus.MissedAppointment);
             
-            const newJob: Job = {
-                id: crypto.randomUUID(),
-                licensePlate: plate,
-                customerName: vehicle ? vehicle.customerName : 'Khách vãng lai',
-                carModel: vehicle ? vehicle.carModel : 'Khác',
-                customerPhone: vehicle ? vehicle.customerPhone : undefined,
-                vin: vehicle ? vehicle.vin : undefined,
-                jobType: JobType.Repair,
-                advisorName: 'Chưa giao',
-                status: JobStatus.Arrived,
-                plannedStartTime: now,
-                plannedEndTime: new Date(now.getTime() + 60 * 60 * 1000),
-                actualArrivalTime: now,
-                useLift: false,
-                isAppointment: false,
-            };
-            await addJob(newJob);
-            setStatusMessage({ type: 'success', text: `Đã nhập xe ${plate} vào xưởng.` });
+            if (appointmentJob) {
+                // Nếu có lịch hẹn, cập nhật lịch hẹn thành trạng thái Đã đến xưởng (Tiếp nhận)
+                await updateJob({
+                    ...appointmentJob,
+                    status: JobStatus.Arrived,
+                    actualArrivalTime: now,
+                });
+                setStatusMessage({ type: 'success', text: `Đã tiếp nhận xe ${plate} từ Lịch hẹn thành công.` });
+            } else {
+                // Nếu không có lịch hẹn, tạo phiếu mới hoàn toàn
+                const vehicle = state.vehicles.find(v => normalizePlate(v.licensePlate) === normalizePlate(plate));
+                
+                const newJob: Job = {
+                    id: crypto.randomUUID(),
+                    licensePlate: plate,
+                    customerName: vehicle ? vehicle.customerName : 'Khách vãng lai',
+                    carModel: vehicle ? vehicle.carModel : 'Khác',
+                    customerPhone: vehicle ? vehicle.customerPhone : undefined,
+                    vin: vehicle ? vehicle.vin : undefined,
+                    jobType: JobType.Repair,
+                    advisorName: 'Chưa giao',
+                    status: JobStatus.Arrived,
+                    plannedStartTime: now,
+                    plannedEndTime: new Date(now.getTime() + 60 * 60 * 1000),
+                    actualArrivalTime: now,
+                    useLift: false,
+                    isAppointment: false,
+                };
+                await addJob(newJob);
+                setStatusMessage({ type: 'success', text: `Đã nhập xe ${plate} vào xưởng.` });
+            }
             setTimeout(() => setStatusMessage(null), 3000);
         } else {
             // EXIT Tab
-            const activeJobs = state.jobs.filter(j => normalizePlate(j.licensePlate) === normalizePlate(plate) && j.status !== JobStatus.Exited);
+            const activeJobs = activeJobsForPlate;
             
             if (activeJobs.length === 0) {
                 throw new Error(`Không tìm thấy xe ${plate} đang ở trong xưởng.`);
